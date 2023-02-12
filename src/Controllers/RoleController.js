@@ -52,6 +52,19 @@ exports.getById = catchAsync(async (req, res) => {
 exports.save = catchAsync(async (req, res) => {
     try {
         const { roleId, roleName } = req.body;
+	if(req.body.roleName == ''){
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "Invalid Attributes"
+            })
+        }
+        const roleDetails = await RoleDetails.findOne({ where: { role_Name : roleName } });
+	if(roleDetails){
+                res.status(HTTP_STATUS_ACCEPTED).json({
+                    status: false,
+                    message: "Role Name is Already existed"
+                })
+        }
         if (roleId && roleId != '' && roleId != 0) {
             const role = await RoleDetails.findOne({ where: { roleId: roleId } });
             if (role) {

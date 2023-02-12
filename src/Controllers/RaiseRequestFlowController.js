@@ -108,15 +108,15 @@ exports.getById = catchAsync(async (req, res) => {
 
 //search API
 exports.search = catchAsync(async (req, res) => {
-    try {
+    try{
         if(req.body.note){
-        var where = {
+        let where = {
             'note' : {'LIKE' : req.body.q}
-        };
+        }
         }
         if(req.body.departmentId){
-            var where = {
-                'departmentId' : req.body.departmentId
+            let where = {
+                'department_Id' : req.body.departmentId
             }
         }
         if(req.body.locationId){
@@ -139,6 +139,7 @@ exports.search = catchAsync(async (req, res) => {
                 'dueDate' : {'$gte' : req.body.fromDate,'$lte' : req.body.$toDate}
             }
         }
+	console.log(where);
         let request = await RaiseRequest.findAll({ where: where });
         if (request) {
             res.status(HTTP_STATUS_ACCEPTED).json({

@@ -52,6 +52,12 @@ exports.getById = catchAsync(async (req, res) => {
 exports.save = catchAsync(async (req, res) => {
     try {
         const { departmentId, departmentName,colorCode,departmentCode } = req.body;
+	if(req.body.departmentName == '' || req.body.colorCode == '' || req.body.departmentCode == ''){
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "Invalid Attributes"
+            })
+        }
         if (departmentId && departmentId != '' && departmentId != 0) {
             const department = await DepartmentDetails.findOne({ where: { departmentId: departmentId } });
             if (department) {

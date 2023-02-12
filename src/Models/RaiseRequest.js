@@ -45,7 +45,6 @@ const {DataTypes, EmptyResultError} = require('sequelize');
           dueDate: {
             type: DataTypes.DATE,
             allowNull: false,
-            defaultValue: null,
             primaryKey: false,
             autoIncrement: false,
             comment: null,
