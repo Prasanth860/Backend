@@ -51,7 +51,7 @@ const {DataTypes, EmptyResultError} = require('sequelize');
             field: "due_date"
           },
           image: {
-            type: DataTypes.JSON,
+            type: DataTypes.STRING,
             allowNull: true,
             defaultValue: null,
             primaryKey: false,
