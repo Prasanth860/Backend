@@ -9,6 +9,7 @@
   "author": "Srilalitha",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.1313.0",
     "bcrypt": "^5.1.0",
     "body-parser": "^1.20.1",
     "cookie-session": "^2.0.0",

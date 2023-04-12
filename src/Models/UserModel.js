@@ -132,7 +132,16 @@ const {DataTypes} = require('sequelize');
             autoIncrement: false,
             comment: null,
             field: "code"
-          }
+          },
+	   image: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null,
+            primaryKey: false,
+            autoIncrement: false,
+            comment: null,
+            field: "image"
+          },
         };
         const options = {
           tableName: "User",

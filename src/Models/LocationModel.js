@@ -43,6 +43,24 @@ const {DataTypes} = require('sequelize');
             autoIncrement: false,
             comment: null,
             field: "updated_date"
+          },
+	  createdBy: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null,
+            primaryKey: false,
+            autoIncrement: false,
+            comment: null,
+            field: "created_by"
+          },
+	  updatedBy: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null,
+            primaryKey: false,
+            autoIncrement: false,
+            comment: null,
+            field: "updated_by"
           }
         };
         const options = {

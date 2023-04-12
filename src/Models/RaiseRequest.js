@@ -1,5 +1,5 @@
 const {DataTypes, EmptyResultError} = require('sequelize');
-      
+    
       module.exports = sequelize => {
         const attributes = {
           reqId: {
@@ -110,6 +110,22 @@ const {DataTypes, EmptyResultError} = require('sequelize');
             comment: null,
             field: "role_Id"
           },
+	  assignedUser: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            primaryKey: false,
+            autoIncrement: false,
+            comment: null,
+            field: "assigned_User"
+          },
+	  assignedBy: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            primaryKey: false,
+            autoIncrement: false,
+            comment: null,
+            field: "assigned_By"
+          }
         };
         const options = {
           tableName: "raise_request",

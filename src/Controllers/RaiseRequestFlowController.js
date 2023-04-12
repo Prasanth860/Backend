@@ -1,4 +1,4 @@
-const { RaiseRequest } = require('../utilities/dbUtilitiess.js');
+const { RaiseRequest,DepartmentDetails, SublocationDetails,LocationDetails,AdminDetails,UserDetails } = require('../utilities/dbUtilitiess.js');
 const { HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_ACCEPTED } = require('http2').constants;
 const catchAsync = require('../utilities/CatchAsync.js');
 process.env.AWS_CONFIG_FILE = require('../config/aws');
@@ -7,7 +7,17 @@ const aws = require('aws-sdk');
 const s3 = new aws.S3({ apiVersion: '2006-03-01' });
 const fs = require('fs');
 const time = Date.now();
-
+const STATUS = {
+    1:'PENDING',
+    2:'ASSIGN_TO_USER',
+    3:'MERGED_WITH_PREVIOUS_TASK',
+    4:'USER_DECLINED',
+    5:'INPROGRESS',
+    6:'WAITING_FOR_MATERIAL',
+    7:'COMPLETED',
+    8:'CLOSED',
+    9:'REOPEN'
+  }
 //Raise Request Api
 exports.save = catchAsync(async (req, res, next) => {
     try {
@@ -44,7 +54,7 @@ exports.save = catchAsync(async (req, res, next) => {
             const uploadparams = {
                 Bucket: bucketName,
                 Key: key,
-                Body: fs.createReadStream('/home/saijyotshna/Documents/Node Js/SrilalithaService_app/' + key),
+                Body: fs.createReadStream('/var/www/html/Backend/'+key),
                 ACL: 'public-read',
             };
             s3.upload(uploadparams, (err, data) => {
@@ -61,6 +71,7 @@ exports.save = catchAsync(async (req, res, next) => {
                 let signedUrl = await awsUrl;
                 let request = await RaiseRequest.findOne({ where: { reqId: id } });
                 if (request) {
+	            console.log(signedUrl);
                     const responseBody = { image:signedUrl };
                     await RaiseRequest.update(responseBody, { where: { reqId: id } });
                     res.status(HTTP_STATUS_ACCEPTED).json({
@@ -79,12 +90,71 @@ exports.save = catchAsync(async (req, res, next) => {
 //get all requests
 exports.getAll = catchAsync(async (req, res) => {
     try {
-        let requestRequests = await RaiseRequest.findAll({ where: { userId: req.body.userId } });
+        //let requestRequests = await RaiseRequest.findAll({ where: { userId: req.body.userId } });
+	let requestRequests = [];
+        if(req.body.roleId == '9' && req.body.userId){
+            let user = await AdminDetails.findOne({where:{userId:req.body.userId}})
+            if(!user){
+                res.status(HTTP_STATUS_ACCEPTED).json({
+                    status: false,
+                    message: "user not found"
+                })
+            }
+            if(user.departmentId){
+                 requestRequests = await RaiseRequest.findAll({ where:{departmentId:user.departmentId} });
+            }
+        }else{
+            requestRequests = await RaiseRequest.findAll({ where: { userId: req.body.userId } });
+        }
+	const responseArray = [];
+
         if (requestRequests) {
+	    for (const request of requestRequests) {
+		let sublocation; 
+                 const location = await LocationDetails.findOne({ where: { locationId: request.locationId } });
+		if(request.sublocationId){
+			 sublocation = await SublocationDetails.findOne({where:{sublocationId:request.sublocationId}});
+		}
+		const createdBy = await UserDetails.findOne({where:{userId:request.userId}});
+                //const sublocation = await SublocationDetails.findOne({where:{sublocationId:request.sublocationId}});
+                const dept = await DepartmentDetails.findOne({where:{departmentId:request.departmentId}});
+                const responseBody = {
+                    reqId:request.reqId,
+                    notes:request.notes,
+                    departmentId:request.departmentId,
+                    deptName:dept.departmentName,
+                    locationId:request.locationId,
+                    locationName : location.locationName,
+                    sublocationId:request.sublocationId,
+                    sublocationName: (sublocation && sublocation.sublocationName) ? sublocation.sublocationName : "null",
+                    dueDate:request.dueDate,
+                    image:request.image,
+                    createdBy:request.userId,
+		    createdUser:createdBy.firstName+' '+createdBy.lastName,
+                    status:STATUS[request.status]
+                }
+		if(request.status == '2'){
+		   if(request.assignedUser){
+			const assignedUser = await UserDetails.findOne({where:{userId:request.assignedUser}});
+		   	responseBody.assignedUserName = assignedUser.firstName+' '+assignedUser.lastName;
+                        responseBody.assignedUser = request.assignedUser;
+		    }
+		   //const assignedUser = await UserDetails.findOne({where:{userId:request.assignedUser}});
+		   if(request.assignedBy){
+		   const assignedBy = await AdminDetails.findOne({where:{userId:request.assignedBy}});
+		  // responseBody.assignedUserName = assignedUser.firstName+' '+assignedUser.lastName;
+		   //responseBody.assignedUser = request.assignedUser;
+		   responseBody.assignedByName = assignedBy.firstName+' '+assignedBy.lastName; 
+                   responseBody.assignedBy = request.assignedBy;
+		   }
+		}
+
+                responseArray.push(responseBody);            
+            }
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: true,
                 message: "Request data found",
-                data: requestRequests
+                data:responseArray
             })
         } else {
             res.status(HTTP_STATUS_ACCEPTED).json({
@@ -102,6 +172,10 @@ exports.getAll = catchAsync(async (req, res) => {
 exports.update = catchAsync(async (req,res) => {
     try{
         const status = req.body.status;
+	 const assignedUser = req.body.assignedUser;
+        const assignedBy = req.body.assignedBy;
+	const updatedBy = req.body.assignedBy;
+
         if(req.body.reqId == '' || req.body.status == ''){
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: false,
@@ -110,12 +184,19 @@ exports.update = catchAsync(async (req,res) => {
         }
         let request =  await RaiseRequest.findOne({where:{reqId : req.body.reqId}});
         if(request){
-            const responseBody = {status};
+	    if(request.status == '1' || request.status == '4'){
+            const responseBody = {status,assignedBy,assignedUser,updatedBy};
             await RaiseRequest.update(responseBody, { where: { reqId: req.body.reqId } });
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: true,
                 message: "Request Status Updated Successfully",
             })
+	   }else{
+		res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "Request Not In Pending or Declined",
+            })
+	    }
         }else{
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: false,
@@ -257,5 +338,32 @@ function getSignedUrl(params) {
 }
 
 
+exports.updateRequest = catchAsync(async (req,res) => {
+    try{
+        const status = req.body.status;
 
-
+        if(req.body.reqId == '' || req.body.status == ''){
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "Invalid Attributes",
+            })
+        }
+        let request =  await RaiseRequest.findOne({where:{reqId : req.body.reqId}});
+        if(request){
+                const responseBody = {status};
+                await RaiseRequest.update(responseBody, { where: { reqId: req.body.reqId } });
+                res.status(HTTP_STATUS_ACCEPTED).json({
+                    status: true,
+                    message: "Request Status Updated Successfully",
+                })
+        }else{
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "Request Not Found",
+            })
+        }
+    }
+    catch(err){
+        return res.status(500).send({ sucess: false, message: err.message })
+    }
+});

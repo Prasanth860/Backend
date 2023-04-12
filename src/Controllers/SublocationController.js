@@ -1,4 +1,4 @@
-const { SublocationDetails } = require('../utilities/dbUtilitiess.js');
+const { SublocationDetails,AdminDetails,LocationDetails } = require('../utilities/dbUtilitiess.js');
 const { HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_ACCEPTED } = require('http2').constants;
 const catchAsync = require('../utilities/CatchAsync.js');
 
@@ -6,11 +6,31 @@ const catchAsync = require('../utilities/CatchAsync.js');
 exports.getAll = catchAsync(async (req, res) => {
     try {
         let subLocation = await SublocationDetails.findAll();
+	 const responseArray = [];
         if (subLocation) {
+	   for(const request of subLocation){
+                let user = await AdminDetails.findOne({where:{userId:request.createdBy}});
+                let updatedUser = await AdminDetails.findOne({where:{userId:request.updatedBy}});
+                let location = await LocationDetails.findOne({where:{locationId:request.locationId}});
+                const responseBody = {
+                    sublocationId: request.sublocationId,
+                    sublocationCode:request.sublocationCode,
+                    sublocationName:request.sublocationName,
+                    locationId:request.locationId,
+                    locationName:location.locationName,
+                    createdAt : request.createdAt,
+                    updatedAt: request.updatedAt,
+                    createdBy:request.createdBy,
+                    updatedBy:request.updatedBy,
+                    createdUser:user.firstName+' '+user.lastName,
+                    updatedUser:updatedUser.firstName+' '+updatedUser.lastName
+                }
+                responseArray.push(responseBody);
+            }
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: true,
                 message: "Sub location data found",
-                data: subLocation
+                data: responseArray
             })
         } else {
             res.status(HTTP_STATUS_ACCEPTED).json({
@@ -51,11 +71,11 @@ exports.getById = catchAsync(async (req, res) => {
 //save
 exports.save = catchAsync(async (req, res) => {
     try {
-        const { sublocationId, locationId,sublocationName,sublocationCode } = req.body;
+        const { sublocationId, locationId,sublocationName,sublocationCode,createdBy,updatedBy } = req.body;
         if (sublocationId && sublocationId != '' && sublocationId != 0) {
             const subLocation = await SublocationDetails.findOne({ where: { sublocationId: sublocationId } });
             if (subLocation) {
-                const responseBody = {locationId, sublocationName,sublocationCode }
+                const responseBody = {locationId, sublocationName,sublocationCode,createdBy,updatedBy }
                 await SublocationDetails.update(responseBody, { where: { sublocationId: sublocationId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,
@@ -68,7 +88,7 @@ exports.save = catchAsync(async (req, res) => {
                 })
             }
         } else {
-            const responseBody = { locationId,sublocationName,sublocationCode }
+            const responseBody = { locationId,sublocationName,sublocationCode,createdBy,updatedBy }
             await SublocationDetails.create(responseBody);
             res.status(HTTP_STATUS_CREATED).json({
                 status: true,
