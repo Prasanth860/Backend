@@ -7,6 +7,7 @@ const aws = require('aws-sdk');
 const s3 = new aws.S3({ apiVersion: '2006-03-01' });
 const fs = require('fs');
 const { DATE } = require('sequelize');
+const { login } = require('./UserController.js');
 const time = Date.now();
 const STATUS = {
     1: 'PENDING',
@@ -35,7 +36,7 @@ exports.save = catchAsync(async (req, res, next) => {
             }
         } else {
             const responseBody = {
-                notes, locationId, sublocationId, departmentId, dueDate, roleId:loginUser.role, userId:loginUser.userId, createdBy:loginUser.userId, updatedBy:loginUser.userId
+                notes, locationId, sublocationId, departmentId, dueDate, roleId: loginUser.role, userId: loginUser.userId, createdBy: loginUser.userId, updatedBy: loginUser.userId
             }
 
             const record = await RaiseRequest.create(responseBody);
@@ -204,7 +205,7 @@ exports.update = catchAsync(async (req, res) => {
         let request = await RaiseRequest.findOne({ where: { reqId: req.body.reqId } });
         if (request) {
             if (request.status == '1' || request.status == '4') {
-                const responseBody = { status, assignedBy, assignedUser, updatedBy:loginUser.userId };
+                const responseBody = { status, assignedBy, assignedUser, updatedBy: loginUser.userId };
                 if (request.status == '1') {
                     statusBody = {
                         reqId: req.body.reqId,
@@ -387,7 +388,7 @@ exports.updateRequest = catchAsync(async (req, res) => {
         }
         let request = await RaiseRequest.findOne({ where: { reqId: req.body.reqId } });
         if (request) {
-            const responseBody = { status,updatedBy:loginUser.userId };
+            const responseBody = { status, updatedBy: loginUser.userId };
             if (status == '8') {
                 const statusBody = {
                     reqId: req.body.reqId,
@@ -447,7 +448,7 @@ exports.updateRequest = catchAsync(async (req, res) => {
 //Add Image in request 
 exports.addImage = catchAsync(async (req, res, next) => {
     try {
-        
+
         const { reqId, image } = req.body
         let loginUser = req.user;
 
@@ -490,7 +491,7 @@ exports.addImage = catchAsync(async (req, res, next) => {
                     let request = await RaiseRequest.findOne({ where: { reqId: id } });
                     if (request) {
                         const images = request.image || []; // get existing images or create an empty array
-                        const responseBody = { image: [...images, signedUrl] ,updatedBy:loginUser.userId};
+                        const responseBody = { image: [...images, signedUrl], updatedBy: loginUser.userId };
                         await RaiseRequest.update(responseBody, { where: { reqId: id } });
                         res.status(HTTP_STATUS_ACCEPTED).json({
                             status: true,
@@ -520,7 +521,7 @@ exports.getStatusByReqId = catchAsync(async (req, res) => {
                 message: "Invalid Attributes",
             })
         }
-        
+
         let requestBystatus = await RequestStatusModel.findAll({ where: { reqId: req.body.reqId } });
         if (requestBystatus) {
             let responseArray = [];
@@ -696,19 +697,22 @@ exports.saveChat = catchAsync(async (req, res) => {
                 role: 'employee',
                 userId: request.dataValues.userId,
                 userName: user.dataValues.firstName + ' ' + user.dataValues.lastName,
-                createdBy: request.dataValues.userId
+                createdBy: request.dataValues.userId,
+                pic:user.dataValues.image
             },
             {
                 role: 'employee',
                 userId: request.dataValues.assignedUser,
                 userName: assigned_User.dataValues.firstName + ' ' + assigned_User.dataValues.lastName,
-                assignedTo: request.dataValues.assignedUser
+                assignedTo: request.dataValues.assignedUser,
+                pic:user.dataValues.image
             },
             {
                 role: 'HOD',
                 userId: request.dataValues.assignedBy,
                 userName: assigned_By.dataValues.firstName + ' ' + assigned_By.dataValues.lastName,
-                assignedBy: request.dataValues.assignedUser
+                assignedBy: request.dataValues.assignedUser,
+                pic:userInfo.dataValues.image
             },
         ];
         //let userId = [[role : 'User',userId:request.dataValues.userId)],{request.dataValues.assignedBy,request.dataValues.assignedUser];
@@ -731,7 +735,7 @@ exports.assignService = catchAsync(async (req, res) => {
             message: "Invalid Attributes",
         })
     }
-   
+
     let responseArray = [];
     let request = await RaiseRequest.findOne({ where: { reqId: req.body.reqId } });
     let requests = await RaiseRequest.findAll({ where: { departmentId: request.dataValues.departmentId, status: ['1', '5'] } });
@@ -782,7 +786,7 @@ exports.mergeTask = catchAsync(async (req, res) => {
     let assignedRequestDetails = await RaiseRequest.findOne({ where: { reqId: req.body.assignedId } });
 
     if (mergeRequestDetails) {
-        responseBody = { status: '3',updatedBy:loginUser.userId }
+        responseBody = { status: '3', updatedBy: loginUser.userId }
         await RaiseRequest.update(responseBody, { where: { reqId: req.body.mergeId } });
         const statusBody = {
             reqId: req.body.mergeId,
@@ -799,7 +803,8 @@ exports.mergeTask = catchAsync(async (req, res) => {
         let newUser = {
             role: 'employee',
             userId: mergeRequestDetails.dataValues.userId,
-            userName: user.dataValues.firstName + ' ' + user.dataValues.lastName
+            userName: user.dataValues.firstName + ' ' + user.dataValues.lastName,
+            pic:user.dataValues.image
         }
         userId.push(newUser);
         const responseBody = { userId };
@@ -834,7 +839,8 @@ exports.employeeAddOrRemove = catchAsync(async (req, res) => {
         let newUser = {
             role: 'employee',
             userId: req.body.userId,
-            userName: user.dataValues.firstName + ' ' + user.dataValues.lastName
+            userName: user.dataValues.firstName + ' ' + user.dataValues.lastName,
+            pic:user.dataValues.image
         }
         userId.push(newUser);
         const responseBody = { userId };
@@ -854,28 +860,33 @@ exports.employeeAddOrRemove = catchAsync(async (req, res) => {
         })
     } else {
         let chat = await ChatModel.findOne({ where: { reqId: req.body.reqId } });
-        let userIds = chat.userIds;
-
-        // Find the index of the userId to remove
-        let indexToRemove = userIds.indexOf(req.body.userId);
-
-        // If the userId is found in the array, remove it
-        if (indexToRemove !== -1) {
-            userIds.splice(indexToRemove, 1);
+        let userId = chat.dataValues.userId;
+        const indexToRemove = userId.findIndex((u) => u.userId === req.body.userId  && u.role === "employee");
+        if (indexToRemove === -1) {
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "User not found in chat",
+            });
+            return;
         }
-        const responseBody = { userIds };
-        await ChatModel.update(responseBody, { where: { reqId: req.body.reqId } });
+        userId.splice(indexToRemove, 1);
+        const responseBody = { userId };
+        await ChatModel.update(responseBody, { where: { reqId:req.body.reqId } });
+
         const status = {
             reason: "REMOVED_USER",
-            status: '5',
-            createdBy: req.body.reqId
-        }
+            status: "5",
+            createdBy: req.body.userId,
+            reqId:req.body.reqId
+        };
         await RequestStatusModel.create(status);
+
         res.status(HTTP_STATUS_ACCEPTED).json({
             status: true,
             message: "User removed successfully",
-        })
+        });
     }
+    
 });
 
 
