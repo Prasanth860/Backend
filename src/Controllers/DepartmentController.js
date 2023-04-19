@@ -1,6 +1,7 @@
 const { DepartmentDetails,AdminDetails } = require('../utilities/dbUtilitiess.js');
 const { HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_ACCEPTED } = require('http2').constants;
 const catchAsync = require('../utilities/CatchAsync.js');
+const { log } = require('util');
 
 // Get all user details
 exports.getAll = catchAsync(async (req, res) => {
@@ -87,11 +88,10 @@ exports.save = catchAsync(async (req, res) => {
             })
         }
         let loginUser = req.user;
-        const {createdBy,updatedBy} = loginUser.userId;
         if (departmentId && departmentId != '' && departmentId != 0) {
             const department = await DepartmentDetails.findOne({ where: { departmentId: departmentId } });
             if (department) {
-                const responseBody = { departmentName,colorCode,departmentCode,updatedBy }
+                const responseBody = { departmentName,colorCode,departmentCode,updatedBy:loginUser.userId }
                 await DepartmentDetails.update(responseBody, { where: { departmentId: departmentId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,
@@ -104,7 +104,7 @@ exports.save = catchAsync(async (req, res) => {
                 })
             }
         } else {
-            const responseBody = { departmentName,colorCode,departmentCode,createdBy,updatedBy }
+            const responseBody = { departmentName,colorCode,departmentCode,createdBy:loginUser.userId,updatedBy:loginUser.userId }
             await DepartmentDetails.create(responseBody);
             res.status(HTTP_STATUS_CREATED).json({
                 status: true,

@@ -84,7 +84,6 @@ exports.save = catchAsync(async (req, res) => {
     try {
         let loginUser = req.user;
         const { roleId, roleName } = req.body;
-        const {createdBy , updatedBy} = loginUser.userId;
 	if(req.body.roleName == ''){
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: false,
@@ -101,7 +100,7 @@ exports.save = catchAsync(async (req, res) => {
         if (roleId && roleId != '' && roleId != 0) {
             const role = await RoleDetails.findOne({ where: { roleId: roleId } });
             if (role) {
-                const responseBody = { roleName,updatedBy }
+                const responseBody = { roleName,updatedBy:loginUser.userId }
                 await RoleDetails.update(responseBody, { where: { roleId: roleId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,
@@ -114,7 +113,7 @@ exports.save = catchAsync(async (req, res) => {
                 })
             }
         } else {
-            const responseBody = { roleName,createdBy,updatedBy }
+            const responseBody = { roleName,createdBy:loginUser.userId,updatedBy:loginUser.userId }
             await RoleDetails.create(responseBody);
             res.status(HTTP_STATUS_CREATED).json({
                 status: true,

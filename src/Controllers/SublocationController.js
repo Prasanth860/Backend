@@ -1,6 +1,7 @@
 const { SublocationDetails,AdminDetails,LocationDetails } = require('../utilities/dbUtilitiess.js');
 const { HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_ACCEPTED } = require('http2').constants;
 const catchAsync = require('../utilities/CatchAsync.js');
+const { login } = require('./UserController.js');
 
 // Get all user details
 exports.getAll = catchAsync(async (req, res) => {
@@ -72,12 +73,11 @@ exports.getById = catchAsync(async (req, res) => {
 exports.save = catchAsync(async (req, res) => {
     try {
         let loginUser = req.user;
-        const {createdBy,updatedBy} = loginUser.userId;
         const { sublocationId, locationId,sublocationName,sublocationCode } = req.body;
         if (sublocationId && sublocationId != '' && sublocationId != 0) {
             const subLocation = await SublocationDetails.findOne({ where: { sublocationId: sublocationId } });
             if (subLocation) {
-                const responseBody = {locationId, sublocationName,sublocationCode,updatedBy }
+                const responseBody = {locationId, sublocationName,sublocationCode,updatedBy:loginUser.userId }
                 await SublocationDetails.update(responseBody, { where: { sublocationId: sublocationId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,
@@ -90,7 +90,7 @@ exports.save = catchAsync(async (req, res) => {
                 })
             }
         } else {
-            const responseBody = { locationId,sublocationName,sublocationCode,createdBy,updatedBy }
+            const responseBody = { locationId,sublocationName,sublocationCode,createdBy:loginUser.userId,updatedBy:loginUser.userId }
             await SublocationDetails.create(responseBody);
             res.status(HTTP_STATUS_CREATED).json({
                 status: true,

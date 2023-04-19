@@ -76,11 +76,10 @@ exports.save = catchAsync(async (req, res) => {
     try {
         const { locationId, locationName,locationCode } = req.body;
         let loginUser = req.user;
-        const {createdBy , updatedBy} = loginUser.userId;
         if (locationId && locationId != '' && locationId != 0) {
             const location = await LocationDetails.findOne({ where: { locationId: locationId } });
             if (location) {
-                const responseBody = { locationName,locationCode,updatedBy}
+                const responseBody = { locationName,locationCode,updatedBy:loginUser.userId}
                 await LocationDetails.update(responseBody, { where: { locationId: locationId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,
@@ -93,7 +92,7 @@ exports.save = catchAsync(async (req, res) => {
                 })
             }
         } else {
-            const responseBody = { locationName,locationCode,createdBy,updatedBy }
+            const responseBody = { locationName,locationCode,createdBy:loginUser.userId,updatedBy:loginUser.userId }
             await LocationDetails.create(responseBody);
             res.status(HTTP_STATUS_CREATED).json({
                 status: true,

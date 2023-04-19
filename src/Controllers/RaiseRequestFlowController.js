@@ -24,7 +24,6 @@ exports.save = catchAsync(async (req, res, next) => {
     try {
         const { reqId, notes, locationId, sublocationId, departmentId, image, dueDate, userId, roleId } = req.body
         let loginUser = req.user;
-        const { createdBy, updatedBy } = loginUser.userId;
         if (reqId && reqId != '' && reqId != 0) {
             const request = await RaiseRequest.findOne({ where: { reqId: reqId } });
             if (request) {
@@ -36,7 +35,7 @@ exports.save = catchAsync(async (req, res, next) => {
             }
         } else {
             const responseBody = {
-                notes, locationId, sublocationId, departmentId, dueDate, roleId, userId, createdBy, updatedBy
+                notes, locationId, sublocationId, departmentId, dueDate, roleId:loginUser.role, userId:loginUser.userId, createdBy:loginUser.userId, updatedBy:loginUser.userId
             }
 
             const record = await RaiseRequest.create(responseBody);
@@ -44,7 +43,7 @@ exports.save = catchAsync(async (req, res, next) => {
             const statusBody = {
                 reqId: record.dataValues.reqId,
                 status: record.dataValues.status,
-                createdBy: createdBy,
+                createdBy: loginUser.userId,
                 reason: "TASK_CREATED"
             };
             await RequestStatusModel.create(statusBody);
@@ -195,7 +194,6 @@ exports.update = catchAsync(async (req, res) => {
         const assignedUser = req.body.assignedUser;
         let loginUser = req.user;
         const assignedBy = loginUser.userId;
-        const { createdBy, updatedBy } = loginUser.userId;
         if (req.body.reqId == '' || req.body.status == '') {
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: false,
@@ -206,7 +204,7 @@ exports.update = catchAsync(async (req, res) => {
         let request = await RaiseRequest.findOne({ where: { reqId: req.body.reqId } });
         if (request) {
             if (request.status == '1' || request.status == '4') {
-                const responseBody = { status, assignedBy, assignedUser, updatedBy };
+                const responseBody = { status, assignedBy, assignedUser, updatedBy:loginUser.userId };
                 if (request.status == '1') {
                     statusBody = {
                         reqId: req.body.reqId,
@@ -381,7 +379,6 @@ exports.updateRequest = catchAsync(async (req, res) => {
     try {
         const status = req.body.status;
         let loginUser = req.user;
-        const {createdBy,updatedBy} = loginUser.userId;
         if (req.body.reqId == '' || req.body.status == '') {
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: false,
@@ -390,7 +387,7 @@ exports.updateRequest = catchAsync(async (req, res) => {
         }
         let request = await RaiseRequest.findOne({ where: { reqId: req.body.reqId } });
         if (request) {
-            const responseBody = { status,updatedBy };
+            const responseBody = { status,updatedBy:loginUser.userId };
             if (status == '8') {
                 const statusBody = {
                     reqId: req.body.reqId,
@@ -453,7 +450,6 @@ exports.addImage = catchAsync(async (req, res, next) => {
         
         const { reqId, image } = req.body
         let loginUser = req.user;
-        const {createdBy,updatedBy} = loginUser.userId;
 
         if (reqId && reqId != '' && reqId != 0) {
             const request = await RaiseRequest.findOne({ where: { reqId: reqId } });
@@ -494,7 +490,7 @@ exports.addImage = catchAsync(async (req, res, next) => {
                     let request = await RaiseRequest.findOne({ where: { reqId: id } });
                     if (request) {
                         const images = request.image || []; // get existing images or create an empty array
-                        const responseBody = { image: [...images, signedUrl] ,updatedBy};
+                        const responseBody = { image: [...images, signedUrl] ,updatedBy:loginUser.userId};
                         await RaiseRequest.update(responseBody, { where: { reqId: id } });
                         res.status(HTTP_STATUS_ACCEPTED).json({
                             status: true,
@@ -782,12 +778,11 @@ exports.mergeTask = catchAsync(async (req, res) => {
         })
     }
     let loginUser = req.user;
-    const {createdBy,updatedBy} = loginUser.userId;
     let mergeRequestDetails = await RaiseRequest.findOne({ where: { reqId: req.body.mergeId } });
     let assignedRequestDetails = await RaiseRequest.findOne({ where: { reqId: req.body.assignedId } });
 
     if (mergeRequestDetails) {
-        responseBody = { status: '3',updatedBy:updatedBy }
+        responseBody = { status: '3',updatedBy:loginUser.userId }
         await RaiseRequest.update(responseBody, { where: { reqId: req.body.mergeId } });
         const statusBody = {
             reqId: req.body.mergeId,
