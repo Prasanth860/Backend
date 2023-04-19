@@ -20,6 +20,8 @@ exports.getAll = catchAsync(async (req, res) => {
                     updatedAt:request.updatedAt,
 		     createdBy:request.createdBy,
                     updatedBy:request.updatedBy,
+                    createdAt:request.createdAt,
+                    updatedAt:request.updatedAt
 		  //  createdUser:user.firstName+' '+user.lastName,
 		    //updatedUser:updatedUser.firstName+' '+updatedUser.lastName,
                 }
@@ -77,17 +79,19 @@ exports.getById = catchAsync(async (req, res) => {
 //save
 exports.save = catchAsync(async (req, res) => {
     try {
-        const { departmentId, departmentName,colorCode,departmentCode,createdBy,updatedBy } = req.body;
+        const { departmentId, departmentName,colorCode,departmentCode} = req.body;
 	if(req.body.departmentName == '' || req.body.colorCode == '' || req.body.departmentCode == ''){
             res.status(HTTP_STATUS_ACCEPTED).json({
                 status: false,
                 message: "Invalid Attributes"
             })
         }
+        let loginUser = req.user;
+        const {createdBy,updatedBy} = loginUser.userId;
         if (departmentId && departmentId != '' && departmentId != 0) {
             const department = await DepartmentDetails.findOne({ where: { departmentId: departmentId } });
             if (department) {
-                const responseBody = { departmentName,colorCode,departmentCode,createdBy,updatedBy }
+                const responseBody = { departmentName,colorCode,departmentCode,updatedBy }
                 await DepartmentDetails.update(responseBody, { where: { departmentId: departmentId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,

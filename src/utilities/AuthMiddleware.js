@@ -1,32 +1,25 @@
-const jwt = require('jsonwebtoken')
+// utilities/AuthMiddleware.js
 
-exports.authMiddleware = (req, res, next) => {
-    if(req.headers.authorization){
-        var token = req.headers.authorization.split(' ')[1];
-        if(token != "null" && token != undefined){
-            try{
-            var payload = jwt.verify(token, process.env.JWT_SECRET);
-            
-            if(payload.subject == req.body._id){
-                next();
-            }
-            else{
-                res.status(401).send("unauthorization access")
-            }
-        } 
-        catch(err){
-            res.status(401).send({error: err.message});
-        }
-    }
-        else{
-            res.status(401).send("unauthorization access")
-        }
-    }
-    else{
-        res.status(401).send("unauthorization access")
-    }
-}
+const jwt = require("jsonwebtoken");
 
-exports.authMiddleware = (req, res, next) => {
+function authMiddleware(req, res, next) {
+  // Get the token from the request headers
+  const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+  
+  // If the token is not present or invalid, send a 401 Unauthorized response
+  if (!token) {
+    return res.status(401).json({ message: "Authentication failed: no token provided." });
+  }
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Authentication failed: invalid token." });
+    }
+    
+    // Add the decoded user information to the request object
+    req.user = decoded;
     next();
+  });
 }
+
+module.exports = { authMiddleware };

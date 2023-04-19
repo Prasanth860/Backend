@@ -6,6 +6,8 @@ const Sublocation_model = require("../Models/SublocationModel")
 const User_model = require("../Models/UserModel")
 const Raise_Request = require("../Models/RaiseRequest")
 const Admin_model = require("../Models/AdminModels")
+const RequestStatus_Model = require("../Models/RequestStatusModel")
+const Chat_Model =  require("../Models/ChatModel");
 
 try {
   var sequelize = new Sequelize(
@@ -30,6 +32,8 @@ try {
   var UserDetails = User_model(sequelize);
   var RaiseRequest = Raise_Request(sequelize);
  var AdminDetails = Admin_model(sequelize);
+ var RequestStatusModel = RequestStatus_Model(sequelize);
+ var ChatModel = Chat_Model(sequelize);
   var db = { sequelize, Sequelize }
   sequelize.sync().then(() => {
     console.log("db and tables have been created");
@@ -46,5 +50,7 @@ module.exports = {
   SublocationDetails,
   UserDetails,
   RaiseRequest,
-AdminDetails
+AdminDetails,
+RequestStatusModel,
+ChatModel
 };

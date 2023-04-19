@@ -13,13 +13,15 @@ const aws = require('aws-sdk');
 const s3 = new aws.S3({ apiVersion: '2006-03-01' });
 const fs = require('fs');
 const time = Date.now();
+const jwt = require('jsonwebtoken')
 
 const createToken = (user) => {
     const expiresIn = 60 * 60 * 365
     const dataStoredInToken = {
         userId: user.userId,
-        name: user.name,
-        email: user.email,
+        name: user.firstName + ' ' +user.lastName,
+        mobile: user.mobile,
+        role:user.roleId
     }
     return sign(dataStoredInToken, process.env.JWT_SECRET, { expiresIn })
 }
@@ -376,6 +378,9 @@ exports.getAllAdmins = catchAsync(async (req, res) => {
 exports.getAllEmployees = catchAsync(async (req, res) => {
    // try {
         const responseArray = [];
+        let loginUser = req.user;
+        req.body.userId = loginUser.userId;
+        req.body.roleId = loginUser.roleId;
         if(req.body.userId && req.body.roleId == '9'){
             let user = await AdminDetails.findOne({where:{userId:req.body.userId}})
             if(user){

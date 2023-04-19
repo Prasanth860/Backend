@@ -71,11 +71,13 @@ exports.getById = catchAsync(async (req, res) => {
 //save
 exports.save = catchAsync(async (req, res) => {
     try {
-        const { sublocationId, locationId,sublocationName,sublocationCode,createdBy,updatedBy } = req.body;
+        let loginUser = req.user;
+        const {createdBy,updatedBy} = loginUser.userId;
+        const { sublocationId, locationId,sublocationName,sublocationCode } = req.body;
         if (sublocationId && sublocationId != '' && sublocationId != 0) {
             const subLocation = await SublocationDetails.findOne({ where: { sublocationId: sublocationId } });
             if (subLocation) {
-                const responseBody = {locationId, sublocationName,sublocationCode,createdBy,updatedBy }
+                const responseBody = {locationId, sublocationName,sublocationCode,updatedBy }
                 await SublocationDetails.update(responseBody, { where: { sublocationId: sublocationId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,

@@ -22,5 +22,8 @@
     "sequelize": "^6.28.0",
     "springedge": "^1.0.6",
     "xss-clean": "^0.1.1"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.1"
   }
 }

@@ -6,23 +6,19 @@ const catchAsync = require('../utilities/CatchAsync.js');
 exports.getAll = catchAsync(async (req, res) => {
     try {
         let location = await LocationDetails.findAll();
-//	let user = await AdminDetails.findOne({where:{userId:request.createdBy}});
-  //      let updatedUser = await AdminDetails.findOne({where:{userId:request.updatedBy}});
 	const responseArray = [];
         if (location) {
 	    for(const request of location){
-		//let user = await AdminDetails.findOne({where:{userId:request.createdBy}});
-       // let updatedUser = await AdminDetails.findOne({where:{userId:request.updatedBy}});
                 responseBody = {
                     locationId:request.locationId,
                     locationCode:request.locationCode,
                     locationName:request.locationName,
                     createdAt:request.createdAt,
                     updatedAt:request.updatedAt,
-		     createdBy:request.createdBy,
+		            createdBy:request.createdBy,
                     updatedBy:request.updatedBy,
-                    //createdUser:user.firstName+' '+user.lastName,
-                    //updatedUser:updatedUser.firstName+' '+updatedUser.lastName
+                    createdAt:request.createdAt,
+                    updatedAt:request.updatedAt
                 }
 		if(request.createdBy){ 
                         let user = await AdminDetails.findOne({where:{userId:request.createdBy}});
@@ -78,11 +74,13 @@ exports.getById = catchAsync(async (req, res) => {
 //save
 exports.save = catchAsync(async (req, res) => {
     try {
-        const { locationId, locationName,locationCode,createdBy,updatedBy } = req.body;
+        const { locationId, locationName,locationCode } = req.body;
+        let loginUser = req.user;
+        const {createdBy , updatedBy} = loginUser.userId;
         if (locationId && locationId != '' && locationId != 0) {
             const location = await LocationDetails.findOne({ where: { locationId: locationId } });
             if (location) {
-                const responseBody = { locationName,locationCode,createdBy,updatedBy }
+                const responseBody = { locationName,locationCode,updatedBy}
                 await LocationDetails.update(responseBody, { where: { locationId: locationId } })
                 res.status(HTTP_STATUS_ACCEPTED).json({
                     status: true,

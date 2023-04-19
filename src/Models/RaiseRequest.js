@@ -51,7 +51,7 @@ const {DataTypes, EmptyResultError} = require('sequelize');
             field: "due_date"
           },
           image: {
-            type: DataTypes.STRING,
+            type: DataTypes.JSON,
             allowNull: true,
             defaultValue: null,
             primaryKey: false,
@@ -66,7 +66,7 @@ const {DataTypes, EmptyResultError} = require('sequelize');
             autoIncrement: false,
             comment: null,
             field: "status",
-            defaultValue:"Active"
+            defaultValue:"1"
           },
           isVerified: {
             type: DataTypes.BOOLEAN,
@@ -112,7 +112,7 @@ const {DataTypes, EmptyResultError} = require('sequelize');
           },
 	  assignedUser: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
             primaryKey: false,
             autoIncrement: false,
             comment: null,
@@ -120,7 +120,7 @@ const {DataTypes, EmptyResultError} = require('sequelize');
           },
 	  assignedBy: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
             primaryKey: false,
             autoIncrement: false,
             comment: null,
