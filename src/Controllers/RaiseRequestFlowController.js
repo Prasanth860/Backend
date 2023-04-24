@@ -105,7 +105,7 @@ exports.getAll = catchAsync(async (req, res) => {
         let requestRequests = [];
         let loginUser = req.user;
         req.body.userId = loginUser.userId;
-        req.body.roleId = loginUser.roleId;
+        req.body.roleId = loginUser.role;
         if (req.body.roleId == '9' && req.body.userId) {
             let user = await AdminDetails.findOne({ where: { userId: req.body.userId } })
             if (!user) {

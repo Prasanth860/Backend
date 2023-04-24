@@ -12,5 +12,6 @@ userRouter.post('/validateOtp',userController.validateOtp);
 userRouter.post('/save-admin', userController.createAdmin);
 userRouter.get('/get-all-admin', authMiddleware, userController.getAllAdmins);
 userRouter.get('/get-all-employees',authMiddleware, userController.getAllEmployees);
+userRouter.get('/logout',authMiddleware,userController.logout);
 
 module.exports = userRouter;
