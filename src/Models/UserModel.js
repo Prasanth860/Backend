@@ -142,6 +142,24 @@ const {DataTypes} = require('sequelize');
             comment: null,
             field: "image"
           },
+          lat: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null,
+            primaryKey: false,
+            autoIncrement: false,
+            comment: null,
+            field: "latitude"
+          },
+          long: {
+            type: DataTypes.STRING,
+            allowNull: true,
+            defaultValue: null,
+            primaryKey: false,
+            autoIncrement: false,
+            comment: null,
+            field: "longitude"
+          },
         };
         const options = {
           tableName: "User",

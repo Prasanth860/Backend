@@ -22,7 +22,7 @@ const STATUS = {
 }
 //Raise Request Api
 exports.save = catchAsync(async (req, res, next) => {
-    try {
+    //try {
         const { reqId, notes, locationId, sublocationId, departmentId, image, dueDate, userId, roleId } = req.body
         let loginUser = req.user;
         if (reqId && reqId != '' && reqId != 0) {
@@ -35,8 +35,18 @@ exports.save = catchAsync(async (req, res, next) => {
                 })
             }
         } else {
+         // Query the maximum value of reqId from the RaiseRequest table
+            const maxReqId = await RaiseRequest.max('reqId');
+
+            // Extract the numeric part of the maxReqId value and increment it by 1
+            const nextReqIdNum = (parseInt(maxReqId.substr(3), 10) || 0) + 1;
+
+
+            // Serialize the nextReqIdNum value to a fixed-length string with leading zeros
+            const newReqId = "SRC" + nextReqIdNum.toString().padStart(2, '0');
+
             const responseBody = {
-                notes, locationId, sublocationId, departmentId, dueDate, roleId: loginUser.role, userId: loginUser.userId, createdBy: loginUser.userId, updatedBy: loginUser.userId
+                reqId:newReqId,notes, locationId, sublocationId, departmentId, dueDate, roleId: loginUser.role, userId: loginUser.userId, createdBy: loginUser.userId, updatedBy: loginUser.userId
             }
 
             const record = await RaiseRequest.create(responseBody);
@@ -94,9 +104,9 @@ exports.save = catchAsync(async (req, res, next) => {
             }
             getAndUseSignedUrl(record.reqId);
         }
-    } catch (err) {
-        return res.status(500).send({ sucess: false, message: err.message })
-    }
+    // } catch (err) {
+    //     return res.status(500).send({ sucess: false, message: err.message })
+    // }
 });
 
 //get all requests
@@ -120,6 +130,96 @@ exports.getAll = catchAsync(async (req, res) => {
         } else {
             requestRequests = await RaiseRequest.findAll({ where: { userId: req.body.userId } });
         }
+        const responseArray = [];
+
+        if (requestRequests) {
+            for (const request of requestRequests) {
+                let sublocation;
+                const location = await LocationDetails.findOne({ where: { locationId: request.locationId } });
+                if (request.sublocationId) {
+                    sublocation = await SublocationDetails.findOne({ where: { sublocationId: request.sublocationId } });
+                }
+                //const sublocation = await SublocationDetails.findOne({where:{sublocationId:request.sublocationId}});
+                const dept = await DepartmentDetails.findOne({ where: { departmentId: request.departmentId } });
+                const responseBody = {
+                    reqId: request.reqId,
+                    notes: request.notes,
+                    departmentId: request.departmentId,
+                    deptName: dept.departmentName,
+                    locationId: request.locationId,
+                    locationName: location.locationName,
+                    sublocationId: request.sublocationId,
+                    sublocationName: (sublocation && sublocation.sublocationName) ? sublocation.sublocationName : "null",
+                    dueDate: request.dueDate,
+                    image: request.image,
+                    createdBy: request.createdBy,
+                    updatedBy: request.updatedBy,
+                    status: STATUS[request.status],
+                    createdAt: request.createdAt,
+                    updatedAt: request.updatedAt
+                }
+                if (request.status == '2') {
+                    if (request.assignedUser) {
+                        const assignedUser = await UserDetails.findOne({ where: { userId: request.assignedUser } });
+                        responseBody.assignedUserName = assignedUser.firstName + ' ' + assignedUser.lastName;
+                        responseBody.assignedUser = request.assignedUser;
+                    }
+                    if (request.assignedBy) {
+                        const assignedBy = await AdminDetails.findOne({ where: { userId: request.assignedBy } });
+                        responseBody.assignedByName = assignedBy.firstName + ' ' + assignedBy.lastName;
+                        responseBody.assignedBy = request.assignedBy;
+                    }
+                }
+                if (request.createdBy) {
+                    let user = await UserDetails.findOne({ where: { userId: request.createdBy } });
+                    responseBody.createdUser = user.firstName + ' ' + user.lastName;
+                }
+                if (request.updatedBy) {
+                    let updatedUser = await AdminDetails.findOne({ where: { userId: request.updatedBy } });
+                    responseBody.updatedUser = updatedUser.firstName + ' ' + updatedUser.lastName;
+                }
+                responseArray.push(responseBody);
+            }
+
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: true,
+                message: "Request data found",
+                data: responseArray
+            })
+        } else {
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "No data found",
+                data: []
+            })
+        }
+    } catch (err) {
+        return res.status(500).send({ sucess: false, message: err.message })
+    }
+})
+
+//get assigned requests under user 
+exports.getAssignedRequestsUnderUser = catchAsync(async (req, res) => {
+    try {
+        let requestRequests = [];
+        const{userId} = req.body;
+        console.log(req.body.userId);
+        if(req.body.userId == ''){
+            res.status(HTTP_STATUS_ACCEPTED).json({
+                status: false,
+                message: "Invalid Attributes"
+            })
+        }
+        if (req.body.userId) {
+            let user = await UserDetails.findOne({ where: { userId: req.body.userId } })
+            if (!user) {
+                res.status(HTTP_STATUS_ACCEPTED).json({
+                    status: false,
+                    message: "user not found"
+                })
+            }
+            requestRequests = await RaiseRequest.findAll({ where: { assignedUser: req.body.userId } });
+        } 
         const responseArray = [];
 
         if (requestRequests) {

@@ -3,7 +3,7 @@ const {DataTypes, EmptyResultError} = require('sequelize');
       module.exports = sequelize => {
         const attributes = {
           reqId: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.STRING,
             allowNull: false,
             primaryKey: true,
             autoIncrement: true,

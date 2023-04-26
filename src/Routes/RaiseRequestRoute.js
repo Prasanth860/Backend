@@ -15,4 +15,6 @@ raiserequestRoute.post('/add-chat',authMiddleware,requestController.saveChat);
 raiserequestRoute.post('/service-list',authMiddleware,requestController.assignService);
 raiserequestRoute.post('/tasks-merge',authMiddleware,requestController.mergeTask);
 raiserequestRoute.post('/employee-add-remove-from-task',authMiddleware,requestController.employeeAddOrRemove);
+raiserequestRoute.post('/assigned-tasks',authMiddleware,requestController.getAssignedRequestsUnderUser);
+
 module.exports = raiserequestRoute;

@@ -1,4 +1,4 @@
-const { UserDetails, AdminDetails, DepartmentDetails, LocationDetails, SublocationDetails, RoleDetails } = require('../utilities/dbUtilitiess.js');
+const { UserDetails, AdminDetails, DepartmentDetails, LocationDetails, SublocationDetails, RoleDetails ,RaiseRequest} = require('../utilities/dbUtilitiess.js');
 const { sign, verify } = require('jsonwebtoken');
 const { Op } = require('sequelize');
 
@@ -30,7 +30,7 @@ const createToken = (user) => {
 // Register
 exports.save = catchAsync(async (req, res, next) => {
     //try {
-    const { userId, firstName, lastName, email, mobile, locationId, sublocationId, departmentId, roleId, code, password, image } = req.body
+    const { userId, firstName, lastName, email, mobile, locationId, sublocationId, departmentId, roleId, code, password, image,lat,long } = req.body
     if (userId && userId != '' && userId != 0) {
         const user = await UserDetails.findOne({ where: { userId: userId } });
         if (user) {
@@ -56,7 +56,24 @@ exports.save = catchAsync(async (req, res, next) => {
         } else {
             const hasPassword = bcrypt.hashSync(password, 10);
             const responseBody = {
-                firstName, lastName, email, mobile, locationId, sublocationId, departmentId, roleId, password: hasPassword, code
+                firstName, lastName, email, mobile, locationId, sublocationId, departmentId, roleId, password: hasPassword, code,lat,long
+            }
+            //check with same employee code exist for 2 members
+
+            const check = await UserDetails.findOne({where:{code:req.body.code}});
+            if(check){
+                res.status(HTTP_STATUS_ACCEPTED).json({
+                    status: false,
+                    message: "Employee code already there"
+                })
+            }
+
+            const checkwithMobile = await UserDetails.findOne({where:{mobile:req.body.mobile}});
+            if(checkwithMobile){
+                res.status(HTTP_STATUS_ACCEPTED).json({
+                    status: false,
+                    message: "Mobile Number already there"
+                })
             }
             const user = await UserDetails.create(responseBody);
             if (req.body.image) {
@@ -383,7 +400,6 @@ exports.getAllEmployees = catchAsync(async (req, res) => {
     req.body.userId = loginUser.userId;
     req.body.roleId = loginUser.role;
     if (req.body.userId && req.body.roleId == '9') {
-        console.log("=====");
         let user = await AdminDetails.findOne({ where: { userId: req.body.userId } })
         if (user) {
             let employees = await UserDetails.findAll({ where: { departmentId: { [Op.in]: user.departmentId } } });
@@ -392,6 +408,9 @@ exports.getAllEmployees = catchAsync(async (req, res) => {
                 let location = await LocationDetails.findOne({ where: { locationId: request.locationId } })
                 let subLocation = await SublocationDetails.findOne({ where: { sublocationId: request.sublocationId } });
                 let role = await RoleDetails.findOne({ where: { roleId: request.roleId } })
+                let pending = await RaiseRequest.findAll({where:{assignedUser : request.userId,status:{[Op.in]:['5','9','6']}}});
+                let assigning = await RaiseRequest.findAll({where:{assignedUser : request.userId,status:{[Op.not]:'4'}}});
+                
                 const responseBody = {
                     name: request.firstName + '' + request.lastName,
                     mobile: request.mobile,
@@ -400,7 +419,11 @@ exports.getAllEmployees = catchAsync(async (req, res) => {
                     location: location.locationName,
                     subLocation: subLocation.sublocationName,
                     role: role.roleName,
-                    userId: request.userId
+                    userId: request.userId,
+                    lattitude:request.lat,
+                    longitude:request.long,
+                    totalPendingTasks:pending.length,
+                    totalAssignedTasks:assigning.length
                 }
                 responseArray.push(responseBody);
             }
